@@ -1,7 +1,7 @@
 #include "Grabbag.h"
-#include "error.h"
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 using namespace std;
 
 namespace {
@@ -18,7 +18,7 @@ namespace {
 
         /* Otherwise, this is the distance to the next zero byte. */
         uint8_t distance = static_cast<uint8_t>(data[index]);
-        if (index + distance >= data.size()) error("Jump would take us out of packet?");
+        if (index + distance >= data.size()) throw runtime_error("Jump would take us out of packet?");
 
         /* Add in this zero byte if it wasn't artificially added in. We can tell if something
          * was artificially added because either
@@ -69,11 +69,11 @@ Grabbag::Grabbag(istream& source) {
     /* There should be an odd number of packets here - the header contains an XOR key,
      * and then we're looking at pairs of filename/contents pairs.
      */
-    if (packets.size() % 2 != 1) error("Expected an odd number of packets.");
+    if (packets.size() % 2 != 1) throw runtime_error("Expected an odd number of packets.");
 
     /* The first packet is the XOR key. */
     string key = packets[0];
-    if (key.empty()) error("Empty XOR key?");
+    if (key.empty()) throw runtime_error("Empty XOR key?");
 
     /* Proceed to decode the rest of the packets. */
     for (size_t i = 1; i < packets.size(); i += 2) {
@@ -81,7 +81,7 @@ Grabbag::Grabbag(istream& source) {
         string contents = xorWith(key, packets[i + 1]);
 
         /* Confirm that this file doesn't already exist. */
-        if (files.count(filename)) error("Duplicate file: " + filename);
+        if (files.count(filename)) throw runtime_error("Duplicate file: " + filename);
         files[filename] = contents;
     }
 }
@@ -91,6 +91,6 @@ bool Grabbag::fileExists(const string& filename) const {
 }
 
 string Grabbag::contentsOf(const string& filename) const {
-    if (!fileExists(filename)) error("File does not exist: " + filename);
+    if (!fileExists(filename)) throw runtime_error("File does not exist: " + filename);
     return files.at(filename);
 }
